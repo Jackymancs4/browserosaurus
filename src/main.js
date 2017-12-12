@@ -3,6 +3,7 @@ import jp from 'jsonpath'
 import { spawn } from 'child_process'
 import parser from 'xml2json'
 import openAboutWindow from 'about-window'
+import opn from 'opn'
 
 // import browsers from './browsers'
 
@@ -78,7 +79,7 @@ const loadConfig = () => {
       }
     }
 
-    //TODO: Implement some semVer arithmetic
+    //TODO:0 Implement some semVer arithmetic
     if (
       configUser.version !== version &&
       configUser.version !== '<%= version %>'
@@ -159,7 +160,7 @@ const findInstalledBrowsers = () => {
         })
         .filter(x => x)
 
-      // TODO: remove debugging printouts
+      // TODO:10 remove debugging printouts
       console.log(notifications)
 
       fulfill(installedBrowsers)
@@ -224,6 +225,7 @@ function createPickerWindow(numberOfBrowsers, callback) {
   // Menubar icon
   tray = new Tray(`${__dirname}/images/icon/tray_iconTemplate.png`)
   tray.setPressedImage(`${__dirname}/images/icon/tray_iconHighlight.png`)
+
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'About',
@@ -231,6 +233,12 @@ function createPickerWindow(numberOfBrowsers, callback) {
         openAboutWindow({
           icon_path: `${__dirname}/images/icon/icon.png`
         })
+      }
+    },
+    {
+      label: 'Preferences',
+      click: function() {
+        opn(require('os').homedir() + '/' + configFileName)
       }
     },
     {

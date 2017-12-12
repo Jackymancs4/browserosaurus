@@ -32,6 +32,10 @@ Mousetrap.bind('esc', () => {
   closeWindow()
 })
 
+Mousetrap.bind('command+,', () => {
+  opn(require('os').homedir() + '/' + configFileName)
+})
+
 const openBrowser = appName =>
   opn(url, { app: appName, wait: false })
     .then(() => closeWindow())
