@@ -32,12 +32,40 @@ const findInstalledBrowsers = () => {
         profile,
         'plist.array.dict.array[1].dict[*].string[0]'
       )
-      const installedBrowsers = installedApps
-        .map(appName => {
-          for (let i = 0; i < browsers.length; i++) {
-            const browser = browsers[i]
-            if (browser.name === appName) {
-              return browser
+
+      // NOTE: Algorithmically speaking this whole thing is an overkill, but working with small numers it will be fine
+      const installedBrowsers = configUser.browsers
+        .map(browser => {
+          if (browser.enabled === false) {
+            return false
+          }
+          // Quoting @will-stone from https://github.com/will-stone/browserosaurus/issues/13
+          // Not on defaults list, not in profiler results: *Notification says: "Google Chrome Error" not currently supported or found on this Mac.
+          if (installedApps.indexOf(browser.name) == -1) {
+            notifications.push(
+              new Notification('error', 'Browser/app not found.')
+            )
+            return false
+          } else {
+            // Not on defaults list, in profiler results (therefore shown with no icon): *Notification says: "Beaker Browser" not officially supported, please ask Browserosaurus to add this browser.
+            if (
+              configDefault.browsers
+                .map(defaultBrowser => {
+                  if (defaultBrowser.name == browser.name) {
+                    return true
+                  } else {
+                    return false
+                  }
+                })
+                .filter(x => x).length == 0
+            ) {
+              notifications.push(
+                new Notification(
+                  'warning',
+                  'Youtra dev, I knew it! Please open an issue about this wonderful browser..'
+                )
+              )
+              browser.icon = 'Custom'
             }
           }
           return false
