@@ -32,7 +32,10 @@ let pickerWindow = null
 let tray = null
 let appIsReady = false
 
+let installedBrowsers = []
+
 let configFileName = '.config/browserosaurus.json'
+let wantToQuit = false
 
 let configDefault = {}
 let configUser = {}
@@ -125,7 +128,7 @@ const findInstalledBrowsers = () => {
       )
 
       // NOTE: Algorithmically speaking this whole thing is an overkill, but working with small numers it will be fine
-      const installedBrowsers = configUser.browsers
+      installedBrowsers = configUser.browsers
         .map(browser => {
           // Quoting @will-stone from https://github.com/will-stone/browserosaurus/issues/13
           // Not on defaults list, not in profiler results: *Notification says: "Google Chrome Error" not currently supported or found on this Mac.
@@ -202,11 +205,49 @@ function getSetting(key) {
   }
 }
 
-function createPickerWindow(numberOfBrowsers, callback) {
-  // Create the browser window.
+function createTrayIcon() {
+  tray = new Tray(`${__dirname}/images/icon/tray_iconTemplate.png`)
+  tray.setPressedImage(`${__dirname}/images/icon/tray_iconHighlight.png`)
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Preferences',
+      click: function() {
+        opn(require('os').homedir() + '/' + configFileName)
+      }
+    },
+    {
+      label: 'About',
+      click: function() {
+        openAboutWindow({
+          icon_path: `${__dirname}/images/icon/icon.png`
+        })
+      }
+    },
+    {
+      label: 'Quit',
+      click: function() {
+        wantToQuit = true
+        app.quit()
+      }
+    }
+  ])
+  tray.setToolTip('Browserosaurus')
+  tray.setContextMenu(contextMenu)
+
+  return null
+}
+/**
+ * Create picker window
+ *
+ * Creates the window that is used to display browser selection after clicking
+ * a link.
+ * @param {Function} callback function to run after this one finishes.
+ */
+function createPickerWindow(callback) {
   pickerWindow = new BrowserWindow({
     width: 400,
-    height: numberOfBrowsers * 64 + 48,
+    height: 64 + 48,
     acceptFirstMouse: true,
     alwaysOnTop: true,
     icon: `${__dirname}/images/icon/icon.png`,
@@ -219,37 +260,14 @@ function createPickerWindow(numberOfBrowsers, callback) {
     backgroundColor: '#111111'
   })
 
-  // and load the index.html of the app.
   pickerWindow.loadURL(`file://${__dirname}/index.html`)
 
-  // Menubar icon
-  tray = new Tray(`${__dirname}/images/icon/tray_iconTemplate.png`)
-  tray.setPressedImage(`${__dirname}/images/icon/tray_iconHighlight.png`)
-
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: 'About',
-      click: function() {
-        openAboutWindow({
-          icon_path: `${__dirname}/images/icon/icon.png`
-        })
-      }
-    },
-    {
-      label: 'Preferences',
-      click: function() {
-        opn(require('os').homedir() + '/' + configFileName)
-      }
-    },
-    {
-      label: 'Quit',
-      click: function() {
-        app.quit()
-      }
-    }
-  ])
-  tray.setToolTip('Browserosaurus')
-  tray.setContextMenu(contextMenu)
+  pickerWindow.on('close', e => {
+    //if (wantToQuit == false) {
+    //e.preventDefault()
+    pickerWindow.hide()
+    //}
+  })
 
   pickerWindow.on('blur', () => {
     pickerWindow.webContents.send('close', true)
@@ -260,37 +278,44 @@ function createPickerWindow(numberOfBrowsers, callback) {
   }
 }
 
-const sendUrlToRenderer = url => {
+/**
+ * Send URL to picker
+ *
+ * When url is clicked, this sends the url to the picker renderer so browsers
+ * know what to open.
+ * @param {String} url clicked link.
+ */
+function sendUrlToRenderer(url) {
   pickerWindow.center() // moves window to current screen
   pickerWindow.webContents.send('incomingURL', url)
 }
 
+/**
+ * App on ready
+ *
+ * Run once electron has loaded and the app is considered _ready for use_.
+ */
 app.on('ready', () => {
   // Prompt to set as default browser
   app.setAsDefaultProtocolClient('http')
 
-  loadConfig().then(() =>
-    findInstalledBrowsers().then(installedBrowsers => {
-      createPickerWindow(installedBrowsers.length, () => {
-        pickerWindow.once('ready-to-show', () => {
-          pickerWindow.webContents.send(
-            'installedBrowsers',
-            installedBrowsers,
-            notifications,
-            {
-              autoOrdering: getSetting('alphabeticalOrder')
-            }
-          )
-          if (global.URLToOpen) {
-            sendUrlToRenderer(global.URLToOpen)
-            global.URLToOpen = null
-          }
-          appIsReady = true
-          // pickerWindow.webContents.openDevTools({ mode: 'detach' })
-        })
+  loadConfig().then(() => {
+    createTrayIcon()
+    createPickerWindow(() => {
+      pickerWindow.once('ready-to-show', () => {
+        if (global.URLToOpen) {
+          sendUrlToRenderer(global.URLToOpen)
+          global.URLToOpen = null
+        }
+        appIsReady = true
       })
     })
-  )
+    findInstalledBrowsers().then(installedBrowsers => {
+      console.log(installedBrowsers)
+      pickerWindow.webContents.send('incomingBrowsers', installedBrowsers)
+    })
+  })
+  //)
 })
 
 // Hide dock icon
