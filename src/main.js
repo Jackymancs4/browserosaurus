@@ -4,9 +4,6 @@ import { spawn } from 'child_process'
 import parser from 'xml2json'
 import openAboutWindow from 'about-window'
 import opn from 'opn'
-
-// import browsers from './browsers'
-
 import memFs from 'mem-fs'
 import editor from 'mem-fs-editor'
 
@@ -26,6 +23,8 @@ class Notification {
   }
 }
 
+// TODO:60 Organize better global variables
+
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let pickerWindow = null
@@ -42,6 +41,7 @@ let configUser = {}
 let notifications = []
 var version = app.getVersion()
 
+//FIXME: Fix the problem with the packaged resource path
 const loadConfig = () => {
   return new Promise((fulfill, reject) => {
     var configPath = require('os').homedir() + '/' + configFileName
@@ -82,7 +82,7 @@ const loadConfig = () => {
       }
     }
 
-    //TODO:0 Implement some semVer arithmetic
+    //TODO:50 Implement some semVer arithmetic
     if (
       configUser.version !== version &&
       configUser.version !== '<%= version %>'
@@ -99,10 +99,12 @@ const loadConfig = () => {
       configUser = mergeConfigs(configUser, configDefault)
     }
 
-    // NOTE: Not sure what to pass here, nothing is required
+    // NOTE:30 Not sure what to pass here, nothing is required
     fulfill(true)
   })
 }
+
+//TODO:70 Separate installedApps logic from installedBrowsers one
 
 const findInstalledBrowsers = () => {
   return new Promise((fulfill, reject) => {
@@ -126,9 +128,8 @@ const findInstalledBrowsers = () => {
         profile,
         'plist.array.dict.array[1].dict[*].string[0]'
       )
-                  "You're a dev, I knew it! Please open an issue about this wonderful browser.."
 
-      // NOTE: Algorithmically speaking this whole thing is an overkill, but working with small numers it will be fine
+      // NOTE:0 Algorithmically speaking this whole thing is an overkill, but working with small numers it will be fine
       installedBrowsers = configUser.browsers
         .map(browser => {
           // Quoting @will-stone from https://github.com/will-stone/browserosaurus/issues/13
@@ -154,7 +155,7 @@ const findInstalledBrowsers = () => {
               notifications.push(
                 new Notification(
                   'warning',
-                  'Youtra dev, I knew it! Please open an issue about this wonderful browser..'
+                  "You're a dev, I knew it! Please open an issue about this wonderful browser.."
                 )
               )
               browser.icon = 'Custom'
@@ -164,7 +165,7 @@ const findInstalledBrowsers = () => {
         })
         .filter(x => x)
 
-      // TODO:10 remove debugging printouts
+      // TODO:80 remove debugging printouts
       console.log(notifications)
 
       fulfill(installedBrowsers)
@@ -172,7 +173,7 @@ const findInstalledBrowsers = () => {
   })
 }
 
-// TODO: Something, but not now
+//DONE:0 Something, but not now
 function mergeConfigs(userConfigLocal, configDefaultLocal) {
   var browsersUser = userConfigLocal.browsers
   var browsersDefaults = configDefaultLocal.browsers
@@ -194,6 +195,7 @@ function mergeConfigs(userConfigLocal, configDefaultLocal) {
   return userConfigLocal
 }
 
+// NOTE:20 Lookup for a consistent way to merge (and maybe set static typing) setting params
 function getSetting(key) {
   if ('settings' in configUser) {
     if (key in configUser.settings) {
@@ -206,6 +208,8 @@ function getSetting(key) {
   }
 }
 
+// TODO:20 Add 'Reload config' item
+// TODO:30 Add 'Rescan browsers' item
 function createTrayIcon() {
   tray = new Tray(`${__dirname}/images/icon/tray_iconTemplate.png`)
   tray.setPressedImage(`${__dirname}/images/icon/tray_iconHighlight.png`)
@@ -296,6 +300,7 @@ function sendUrlToRenderer(url) {
  *
  * Run once electron has loaded and the app is considered _ready for use_.
  */
+// TODO:0 Find an elegant way to pass settings to the render
 app.on('ready', () => {
   // Prompt to set as default browser
   app.setAsDefaultProtocolClient('http')
@@ -312,7 +317,6 @@ app.on('ready', () => {
       })
     })
     findInstalledBrowsers().then(installedBrowsers => {
-      console.log(installedBrowsers)
       pickerWindow.webContents.send('incomingBrowsers', installedBrowsers)
     })
   })

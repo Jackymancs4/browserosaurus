@@ -9,13 +9,14 @@ const urlField = document.getElementById('url')
 // Hide the picker window
 const closeWindow = () => {
   urlField.innerText = ''
-
   setTimeout(() => {
     // if not paused, escape causes an audible error (beep). Presumably there's some sort of race condition here. Anyway, the timeout seems to solve it.
     currentWindow.hide()
     url = null
   }, 0)
 }
+
+// TODO:10 Add 'Cmd+,' key binding to open The configuration file'
 
 // Listen for URL
 electron.ipcRenderer.on('incomingURL', (event, message) => {
@@ -74,13 +75,20 @@ function emptiesPicker() {
  * Injects all present and enabled browsers as list items of picker.
  * @param {Array} installedBrowsers
  */
+
+// NOTE:10 Check when doubled keys are inserted, and in case fix any issue
+// TODO:40 Add some control for browsers without an icon
 function populatePicker(installedBrowsers) {
   if (installedBrowsers.length > 0) {
     // Populate installedBrowsers
 
     currentWindow.setSize(
       400,
-      installedBrowsers.filter(browser => browser.enabled === undefined || browser.enabled).length * 64 + 48
+      installedBrowsers.filter(
+        browser => browser.enabled === undefined || browser.enabled
+      ).length *
+        64 +
+        48
     )
 
     installedBrowsers
