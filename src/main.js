@@ -126,6 +126,7 @@ const findInstalledBrowsers = () => {
         profile,
         'plist.array.dict.array[1].dict[*].string[0]'
       )
+                  "You're a dev, I knew it! Please open an issue about this wonderful browser.."
 
       // NOTE: Algorithmically speaking this whole thing is an overkill, but working with small numers it will be fine
       installedBrowsers = configUser.browsers
