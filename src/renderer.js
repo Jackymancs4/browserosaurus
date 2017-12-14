@@ -31,6 +31,10 @@ Mousetrap.bind('esc', () => {
   closeWindow()
 })
 
+Mousetrap.bind('command+,', () => {
+  opn(require('os').homedir() + '/' + configFileName)
+})
+
 const openBrowser = appName =>
   opn(url, { app: appName, wait: false })
     .then(() => closeWindow())
@@ -42,39 +46,33 @@ const openBrowser = appName =>
     )
 
 // Listen for installedBrowsers
-electron.ipcRenderer.on('installedBrowsers', (event, installedBrowsers) => {
-  document.getElementById('loading').style.display = 'none'
-  installedBrowsers
-    .map(browser => {
-      // use alias as label if available, otherwise use name
-      if (!browser.alias) {
-        browser.alias = browser.name
-      }
-      return browser
-    })
-    .sort((a, b) => {
-      // alphabetise
-      if (a.alias < b.alias) return -1
-      if (a.alias > b.alias) return 1
-      return 0
-    })
-    .map(browser => {
-      const listItem = document.createElement('li')
+electron.ipcRenderer.on(
+  'installedBrowsers',
+  (event, installedBrowsers, notifications, settings) => {
+    const listKeys = []
 
-      const browserLogo = document.createElement('img')
-      browserLogo.classList.add('browserLogo')
-      browserLogo.src = `images/browser-logos/${browser.name}.png`
-      listItem.appendChild(browserLogo)
+    document.getElementById('loading').style.display = 'none'
+    installedBrowsers
+      .map(browser => {
+        // use alias as label if available, otherwise use name
+        if (!browser.alias) {
+          browser.alias = browser.name
+        }
+        return browser
+      })
+      .sort((a, b) => {
+        // alphabetise
 
-      const browserName = document.createElement('span')
-      browserName.classList.add('browserName')
-      browserName.innerText = browser.alias
-      listItem.appendChild(browserName)
+        if (settings.autoOrdering) {
+          if (a.alias < b.alias) return -1
+          if (a.alias > b.alias) return 1
+        }
+        return 0
+      })
+      .map(browser => {
+        const listItem = document.createElement('li')
 
-      const browserKey = document.createElement('span')
-      browserKey.classList.add('browserKey')
-      browserKey.innerText = browser.key
-      listItem.appendChild(browserKey)
+        browser.key = browser.key.trim()[0]
 
       listItem.addEventListener('click', () => {
         listItem.classList.remove('active')
@@ -96,5 +94,5 @@ electron.ipcRenderer.on('installedBrowsers', (event, installedBrowsers) => {
           openBrowser(browser.name)
         }, 200)
       })
-    })
-})
+  }
+)
